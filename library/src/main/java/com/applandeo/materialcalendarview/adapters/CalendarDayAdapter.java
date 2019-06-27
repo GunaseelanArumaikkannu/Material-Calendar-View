@@ -2,7 +2,9 @@ package com.applandeo.materialcalendarview.adapters;
 
 import android.content.Context;
 import android.graphics.Typeface;
+
 import androidx.annotation.NonNull;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,9 +40,12 @@ class CalendarDayAdapter extends ArrayAdapter<Date> {
 
     private CalendarProperties mCalendarProperties;
 
+    private boolean isMonthView;
+
     CalendarDayAdapter(CalendarPageAdapter calendarPageAdapter, Context context, CalendarProperties calendarProperties,
                        ArrayList<Date> dates, int pageMonth) {
         super(context, calendarProperties.getItemLayoutResource(), dates);
+        isMonthView = dates.size() != 7;
         mCalendarPageAdapter = calendarPageAdapter;
         mCalendarProperties = calendarProperties;
         mPageMonth = pageMonth < 0 ? 11 : pageMonth;
@@ -73,7 +78,7 @@ class CalendarDayAdapter extends ArrayAdapter<Date> {
 
     private void setLabelColors(TextView dayLabel, Calendar day) {
         // Setting not current month day color
-        if (!isCurrentMonthDay(day)) {
+        if (isMonthView && !isCurrentMonthDay(day)) {
             DayColorsUtils.setDayColors(dayLabel, mCalendarProperties.getAnotherMonthsDaysLabelsColor(),
                     Typeface.NORMAL, R.drawable.background_transparent);
             return;
@@ -101,8 +106,16 @@ class CalendarDayAdapter extends ArrayAdapter<Date> {
     }
 
     private boolean isSelectedDay(Calendar day) {
-        return mCalendarProperties.getCalendarType() != CalendarView.CLASSIC && day.get(Calendar.MONTH) == mPageMonth
-                && mCalendarPageAdapter.getSelectedDays().contains(new SelectedDay(day));
+        if (isMonthView) {
+            return mCalendarProperties.getCalendarType() != CalendarView.CLASSIC && day.get(Calendar.MONTH) == mPageMonth
+                    && mCalendarPageAdapter.getSelectedDays().contains(new SelectedDay(day));
+        } else {
+            Date date = day.getTime();
+            int dWeek = day.get(Calendar.WEEK_OF_MONTH);
+            boolean isSelectedDay = mCalendarProperties.getCalendarType() != CalendarView.CLASSIC/* && dWeek == mPageMonth*/
+                    && mCalendarPageAdapter.getSelectedDays().contains(new SelectedDay(day));
+            return isSelectedDay;
+        }
     }
 
     private boolean isCurrentMonthDay(Calendar day) {
@@ -131,6 +144,6 @@ class CalendarDayAdapter extends ArrayAdapter<Date> {
                 dayIcon.setAlpha(0.12f);
             }
 
-        });
+        }).executeIfAbsent(() -> dayIcon.setVisibility(View.GONE));
     }
 }

@@ -57,6 +57,7 @@ public class CalendarProperties {
     private List<Calendar> mDisabledDays = new ArrayList<>();
     private List<Calendar> mHighlightedDays = new ArrayList<>();
     private List<SelectedDay> mSelectedDays = new ArrayList<>();
+    private SelectedDay mCurrentSelectedDay;
 
     private Context mContext;
 
@@ -399,5 +400,13 @@ public class CalendarProperties {
 
     public void setAbbreviationsBarVisibility(int abbreviationsBarVisbility) {
         mAbbreviationsBarVisibility = abbreviationsBarVisbility;
+    }
+
+    public SelectedDay getmCurrentSelectedDay() {
+        return mCurrentSelectedDay;
+    }
+
+    public void setmCurrentSelectedDay(SelectedDay mCurrentSelectedDay) {
+        this.mCurrentSelectedDay = mCurrentSelectedDay;
     }
 }

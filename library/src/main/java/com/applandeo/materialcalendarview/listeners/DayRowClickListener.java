@@ -32,11 +32,13 @@ public class DayRowClickListener implements AdapterView.OnItemClickListener {
 
     private CalendarProperties mCalendarProperties;
     private int mPageMonth;
+    private boolean isWeekView;
 
-    public DayRowClickListener(CalendarPageAdapter calendarPageAdapter, CalendarProperties calendarProperties, int pageMonth) {
+    public DayRowClickListener(CalendarPageAdapter calendarPageAdapter, CalendarProperties calendarProperties, int pageMonth, boolean isWeekView) {
         mCalendarPageAdapter = calendarPageAdapter;
         mCalendarProperties = calendarProperties;
         mPageMonth = pageMonth < 0 ? 11 : pageMonth;
+        this.isWeekView = isWeekView;
     }
 
     @Override
@@ -144,6 +146,9 @@ public class DayRowClickListener implements AdapterView.OnItemClickListener {
     }
 
     private boolean isCurrentMonthDay(Calendar day) {
+        if(isWeekView){
+            return isBetweenMinAndMax(day);
+        }
         return day.get(Calendar.MONTH) == mPageMonth && isBetweenMinAndMax(day);
     }
 

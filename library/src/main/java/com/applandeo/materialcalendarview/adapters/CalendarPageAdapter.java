@@ -1,7 +1,11 @@
 package com.applandeo.materialcalendarview.adapters;
 
 import android.content.Context;
+
+import androidx.annotation.NonNull;
 import androidx.viewpager.widget.PagerAdapter;
+
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +14,7 @@ import com.applandeo.materialcalendarview.R;
 import com.applandeo.materialcalendarview.extensions.CalendarGridView;
 import com.applandeo.materialcalendarview.listeners.DayRowClickListener;
 import com.applandeo.materialcalendarview.utils.CalendarProperties;
+import com.applandeo.materialcalendarview.utils.DateUtils;
 import com.applandeo.materialcalendarview.utils.SelectedDay;
 
 import java.util.ArrayList;
@@ -33,6 +38,8 @@ public class CalendarPageAdapter extends PagerAdapter {
     private CalendarProperties mCalendarProperties;
 
     private int mPageMonth;
+    private int mPageWeek;
+    private boolean isWeekView;
 
     public CalendarPageAdapter(Context context, CalendarProperties calendarProperties) {
         mContext = context;
@@ -46,24 +53,31 @@ public class CalendarPageAdapter extends PagerAdapter {
     }
 
     @Override
-    public int getItemPosition(Object object) {
+    public int getItemPosition(@NonNull Object object) {
         return POSITION_NONE;
     }
 
     @Override
-    public boolean isViewFromObject(View view, Object object) {
+    public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
         return view == object;
     }
 
+    @NonNull
     @Override
-    public Object instantiateItem(ViewGroup container, int position) {
+    public Object instantiateItem(@NonNull ViewGroup container, int position) {
         LayoutInflater inflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        mCalendarGridView = (CalendarGridView) inflater.inflate(R.layout.calendar_view_grid, null);
+        if (inflater != null) {
+            mCalendarGridView = (CalendarGridView) inflater.inflate(R.layout.calendar_view_grid, null);
+        }
 
-        loadMonth(position);
+        if (isWeekView) {
+            loadWeek(position);
+        } else {
+            loadMonth(position);
+        }
 
         mCalendarGridView.setOnItemClickListener(new DayRowClickListener(this,
-                mCalendarProperties, mPageMonth));
+                mCalendarProperties, mPageMonth, isWeekView));
 
         container.addView(mCalendarGridView);
         return mCalendarGridView;
@@ -80,6 +94,12 @@ public class CalendarPageAdapter extends PagerAdapter {
         informDatePicker();
     }
 
+    public void addSelectedDay1(SelectedDay selectedDay) {
+        if (!mCalendarProperties.getSelectedDays().contains(selectedDay)) {
+            mCalendarProperties.getSelectedDays().add(selectedDay);
+        }
+    }
+
     public List<SelectedDay> getSelectedDays() {
         return mCalendarProperties.getSelectedDays();
     }
@@ -90,6 +110,9 @@ public class CalendarPageAdapter extends PagerAdapter {
 
     public void setSelectedDay(SelectedDay selectedDay) {
         mCalendarProperties.setSelectedDay(selectedDay);
+        if (isWeekView) {
+            notifyDataSetChanged();
+        }
         informDatePicker();
     }
 
@@ -143,6 +166,64 @@ public class CalendarPageAdapter extends PagerAdapter {
                 mCalendarProperties, days, mPageMonth);
 
         mCalendarGridView.setAdapter(calendarDayAdapter);
+    }
+
+    /**
+     * This method fill calendar GridView with days
+     *
+     * @param position Position of current page in ViewPager
+     */
+    private void loadWeek(int position) {
+        ArrayList<Date> days = new ArrayList<>();
+
+        // Get Calendar object instance
+        Calendar calendar = (Calendar) mCalendarProperties.getFirstPageCalendarDate().clone();
+
+        // Add weeks to Calendar (a number of weeks depends on ViewPager position)
+        calendar.add(Calendar.WEEK_OF_MONTH, position);
+
+// Set day of week as 1
+        calendar.set(Calendar.DAY_OF_WEEK, Calendar.SUNDAY);
+
+        // Get a number of the first day of the week
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        // Count when month is beginning
+        int firstDayOfWeek = calendar.getFirstDayOfWeek();
+        int weekBeginningCell = (dayOfWeek < firstDayOfWeek ? 7 : 0) + dayOfWeek - firstDayOfWeek;
+
+        // Subtract a number of beginning days, it will let to load a part of a previous month
+        calendar.add(Calendar.DAY_OF_WEEK, -weekBeginningCell);
+
+        /*
+        Get all days of one page (42 is a number of all possible cells in one page
+        (a part of previous month, current month and a part of next month))
+         */
+        while (days.size() < 7) {
+            days.add(calendar.getTime());
+            int dWeek = calendar.get(Calendar.DAY_OF_WEEK);
+            Calendar selectedDay = getSelectedDay().getCalendar();
+            if (selectedDay.get(Calendar.DAY_OF_WEEK) == dWeek && selectedDay.getTimeInMillis() != calendar.getTimeInMillis()) {
+                addSelectedDay1(new SelectedDay((Calendar) calendar.clone()));
+            }
+            calendar.add(Calendar.DAY_OF_MONTH, 1);
+        }
+
+        mPageWeek = calendar.get(Calendar.WEEK_OF_MONTH) - 1;
+        CalendarDayAdapter calendarDayAdapter = new CalendarDayAdapter(this, mContext,
+                mCalendarProperties, days, mPageWeek);
+
+        mCalendarGridView.setAdapter(calendarDayAdapter);
+    }
+
+    /**
+     * This method fill calendar GridView with days
+     */
+    public void toggleView(boolean isWeekView) {
+        if (this.isWeekView != isWeekView) {
+            this.isWeekView = isWeekView;
+            notifyDataSetChanged();
+        }
     }
 
     @Override

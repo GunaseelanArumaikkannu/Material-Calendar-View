@@ -3,9 +3,12 @@ package com.applandeo.materialcalendarview;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
+
 import androidx.annotation.ColorRes;
 import androidx.viewpager.widget.ViewPager;
+
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -66,6 +69,7 @@ public class CalendarView extends LinearLayout {
     private CalendarViewPager mViewPager;
 
     private CalendarProperties mCalendarProperties;
+    private boolean isWeekView;
 
     public CalendarView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -261,10 +265,10 @@ public class CalendarView extends LinearLayout {
         mViewPager.setAdapter(mCalendarPageAdapter);
         mViewPager.addOnPageChangeListener(onPageChangeListener);
 
-        setUpCalendarPosition(Calendar.getInstance());
+        setUpCalendarPosition(Calendar.getInstance(), false);
     }
 
-    private void setUpCalendarPosition(Calendar calendar) {
+    private void setUpCalendarPosition(Calendar calendar, boolean isWeekView) {
         DateUtils.setMidnight(calendar);
 
         if (mCalendarProperties.getCalendarType() == CalendarView.ONE_DAY_PICKER) {
@@ -272,7 +276,11 @@ public class CalendarView extends LinearLayout {
         }
 
         mCalendarProperties.getFirstPageCalendarDate().setTime(calendar.getTime());
-        mCalendarProperties.getFirstPageCalendarDate().add(Calendar.MONTH, -FIRST_VISIBLE_PAGE);
+        if (isWeekView) {
+            mCalendarProperties.getFirstPageCalendarDate().add(Calendar.WEEK_OF_MONTH, -FIRST_VISIBLE_PAGE);
+        } else {
+            mCalendarProperties.getFirstPageCalendarDate().add(Calendar.MONTH, -FIRST_VISIBLE_PAGE);
+        }
 
         mViewPager.setCurrentItem(FIRST_VISIBLE_PAGE);
     }
@@ -305,7 +313,20 @@ public class CalendarView extends LinearLayout {
         @Override
         public void onPageSelected(int position) {
             Calendar calendar = (Calendar) mCalendarProperties.getFirstPageCalendarDate().clone();
-            calendar.add(Calendar.MONTH, position);
+            if (isWeekView) {
+                calendar.add(Calendar.WEEK_OF_MONTH, position);
+                for (SelectedDay selectedDay : mCalendarProperties.getSelectedDays()) {
+                    Calendar selectedCalendar = selectedDay.getCalendar();
+                    if (calendar.get(Calendar.WEEK_OF_MONTH) == selectedCalendar.get(Calendar.WEEK_OF_MONTH)
+                            && calendar.get(Calendar.MONTH) == selectedCalendar.get(Calendar.MONTH)
+                            && calendar.get(Calendar.YEAR) == selectedCalendar.get(Calendar.YEAR)) {
+                        mCalendarProperties.setmCurrentSelectedDay(selectedDay);
+                        break;
+                    }
+                }
+            } else {
+                calendar.add(Calendar.MONTH, position);
+            }
 
             if (!isScrollingLimited(calendar, position)) {
                 setHeaderName(calendar, position);
@@ -371,7 +392,7 @@ public class CalendarView extends LinearLayout {
             throw new OutOfDateRangeException(ErrorsMessages.OUT_OF_RANGE_MAX);
         }
 
-        setUpCalendarPosition(date);
+        setUpCalendarPosition(date, isWeekView);
 
         mCurrentMonthLabel.setText(DateUtils.getMonthAndYearDate(mContext, date));
         mCalendarPageAdapter.notifyDataSetChanged();
@@ -387,6 +408,38 @@ public class CalendarView extends LinearLayout {
         calendar.setTime(currentDate);
 
         setDate(calendar);
+    }
+
+    public void toggleView(boolean isWeekView) {
+        this.isWeekView = isWeekView;
+        setUpCalendarPosition(Calendar.getInstance(), isWeekView);
+        mCalendarPageAdapter.toggleView(isWeekView);
+        if (!isWeekView) {
+            setCurrentMonthByDate(mCalendarProperties.getmCurrentSelectedDay().getCalendar());
+        }
+    }
+
+    private void setCurrentMonthByDate(Calendar selectedDay) {
+        Date date = selectedDay.getTime();
+        Calendar calendar = (Calendar) mCalendarProperties.getFirstPageCalendarDate().clone();
+        int diffMonths = calendar.get(Calendar.MONTH) - selectedDay.get(Calendar.MONTH);
+        diffMonths += (calendar.get(Calendar.YEAR) - selectedDay.get(Calendar.YEAR)) * 12;
+        mViewPager.setCurrentItem(Math.abs(diffMonths));
+    }
+
+    public void setCurrentWeekByDate(Calendar date) {
+        Calendar calendar = (Calendar) mCalendarProperties.getFirstPageCalendarDate().clone();
+        long diffInMs = calendar.getTimeInMillis() - date.getTimeInMillis();
+        long diffInDays = diffInMs / (24 * 60 * 60 * 1000);
+        long reminder = diffInDays % 7;
+        long weekCount = diffInDays / 7;
+        if (Math.abs(reminder) >= 4) {
+            weekCount -= 1;
+        }
+        /*int monthPosition = date.get(Calendar.MONTH);
+        int position = date.get(Calendar.WEEK_OF_MONTH);*/
+        mViewPager.setCurrentItem(Math.abs((int) weekCount));
+        //Log.v("CalerndarView", "position : " + position + ", monthPosition: " + monthPosition);
     }
 
     /**

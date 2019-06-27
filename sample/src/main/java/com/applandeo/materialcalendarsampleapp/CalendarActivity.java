@@ -1,14 +1,13 @@
 package com.applandeo.materialcalendarsampleapp;
 
 import android.os.Bundle;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.applandeo.materialcalendarsampleapp.utils.DrawableUtils;
 import com.applandeo.materialcalendarview.CalendarView;
-import com.applandeo.materialcalendarview.EventDay;
-import com.applandeo.materialcalendarview.exceptions.OutOfDateRangeException;
 import com.applandeo.materialcalendarview.utils.DateUtils;
 
 import java.util.ArrayList;
@@ -22,12 +21,14 @@ import java.util.Random;
 
 public class CalendarActivity extends AppCompatActivity {
 
+    private boolean isWeekView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.calendar_activity);
 
-        List<EventDay> events = new ArrayList<>();
+        /*List<EventDay> events = new ArrayList<>();
 
         Calendar calendar = Calendar.getInstance();
         events.add(new EventDay(calendar, DrawableUtils.getCircleDrawableWithText(this, "M")));
@@ -46,32 +47,40 @@ public class CalendarActivity extends AppCompatActivity {
 
         Calendar calendar4 = Calendar.getInstance();
         calendar4.add(Calendar.DAY_OF_MONTH, 13);
-        events.add(new EventDay(calendar4, DrawableUtils.getThreeDots(this)));
+        events.add(new EventDay(calendar4, DrawableUtils.getThreeDots(this)));*/
 
         CalendarView calendarView = (CalendarView) findViewById(R.id.calendarView);
 
-        Calendar min = Calendar.getInstance();
+        /*Calendar min = Calendar.getInstance();
         min.add(Calendar.MONTH, -2);
 
         Calendar max = Calendar.getInstance();
         max.add(Calendar.MONTH, 2);
 
         calendarView.setMinimumDate(min);
-        calendarView.setMaximumDate(max);
+        calendarView.setMaximumDate(max);*/
 
-        calendarView.setEvents(events);
+        //calendarView.setEvents(events);
 
-        calendarView.setDisabledDays(getDisabledDays());
+        //calendarView.setDisabledDays(getDisabledDays());
 
-        calendarView.setOnDayClickListener(eventDay ->
-                Toast.makeText(getApplicationContext(),
-                        eventDay.getCalendar().getTime().toString() + " "
-                                + eventDay.isEnabled(),
-                        Toast.LENGTH_SHORT).show());
+        calendarView.setOnDayClickListener(eventDay -> {
+            if (!isWeekView) {
+                isWeekView = true;
+            }
+            calendarView.toggleView(isWeekView);
+            calendarView.setCurrentWeekByDate(eventDay.getCalendar());
+            Toast.makeText(getApplicationContext(),
+                    eventDay.getCalendar().getTime().toString() + " "
+                            + eventDay.isEnabled(),
+                    Toast.LENGTH_SHORT).show();
+        });
 
         Button setDateButton = (Button) findViewById(R.id.setDateButton);
         setDateButton.setOnClickListener(v -> {
-            try {
+            isWeekView = !isWeekView;
+            calendarView.toggleView(isWeekView);
+            /*try {
                 Calendar randomCalendar = getRandomCalendar();
                 String text = randomCalendar.getTime().toString();
                 Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG).show();
@@ -82,7 +91,7 @@ public class CalendarActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(),
                         "Date is out of range",
                         Toast.LENGTH_LONG).show();
-            }
+            }*/
         });
     }
 
