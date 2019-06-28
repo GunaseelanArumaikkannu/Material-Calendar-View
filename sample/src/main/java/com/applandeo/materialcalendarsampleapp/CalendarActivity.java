@@ -4,11 +4,15 @@ import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.util.Log;
 import android.widget.Button;
 import android.widget.Toast;
 
 import com.applandeo.materialcalendarview.CalendarView;
+import com.applandeo.materialcalendarview.listeners.OnCalendarPageChangeListener;
+import com.applandeo.materialcalendarview.listeners.OnCalendarPageSelectedListener;
 import com.applandeo.materialcalendarview.utils.DateUtils;
+import com.applandeo.materialcalendarview.utils.SelectedDay;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -74,6 +78,13 @@ public class CalendarActivity extends AppCompatActivity {
                     eventDay.getCalendar().getTime().toString() + " "
                             + eventDay.isEnabled(),
                     Toast.LENGTH_SHORT).show();
+        });
+
+        calendarView.setOnPageSelectedListener(new OnCalendarPageSelectedListener() {
+            @Override
+            public void onPageSelected(SelectedDay selectedDay) {
+                Log.v("CalendarActivity", selectedDay.getCalendar().getTime().toString());
+            }
         });
 
         Button setDateButton = (Button) findViewById(R.id.setDateButton);
